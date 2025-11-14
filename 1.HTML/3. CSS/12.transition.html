@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ko">
+    <head>
+        <head>
+        <meta charest=" UTf-8">
+        <meta name=" viewport" content="width= decive-width, initial-scale=1.0">
+        <titile> 문서</titile>
+
+        <style>
+         .square {
+            width:100px;
+            height: 100px;
+            background-color: red;
+            transition-property: width, height;
+            transition-duration: 1s;
+         }
+        .square:hover {  /*호버*/
+           width: 250px;
+           height: 150px;
+        }   
+         .button {
+            color: black;
+            transition-property: color;
+            transition-duration: 1s;
+            transition-timing-function: cubic-bezier(0.39, 0.575, 0.565, 1);
+         }
+         .button:hover {
+            color:red
+         }
+        </style>
+
+    </head>
+ <body>
+    <div class="square"></div>
+    <hr>
+    <button class="button"> Hover me (마우스 오버)</button>
+    <img class="image">
+ </body>
+
+
+</html>

@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charest=" UTf-8">
+        <meta name=" viewport" content="width= decive-width, initial-scale=1.0">
+        <titile> 문서</titile>
+
+        <style>
+
+            .box {
+                width:100px;
+                height:100px;
+                background-color: red;
+                animation-name: moveleft;
+                animation-duration: 2s;
+                animation-direction:alternate;
+                animation-timing-function :ease;
+                position:relative;
+            }
+
+            @keyframes moveleft {
+                0% {
+                    left:0%;
+                }
+                100% {
+                    left:200px;
+                }
+
+            }
+
+
+            @keyframes fadeout {
+                0%  {
+                    opacity: 1;
+                }
+                100% {
+                    opacity:0;
+                }
+            }
+
+            .circle {
+                width: 100px;
+                height: 100px;
+                background-color: blue;
+                color:white;
+                text-align:center;
+                border-radius: 50%;
+                animation-name:rotateAndscale
+                animation-duration:3s;
+            }
+
+           @keyframes rotateAndscale {
+            0% {trasmform: rotate( 0deg) scale(1);
+            }
+            50%  {trasmform: rotate( 180deg) scale(1.5) ;   }
+            100% {trasmform: rotate( 360deg) scale(1) ; }
+
+           }
+    
+        </style>
+
+    </head>
+    <body>
+        <div class="box"> 밀어서 잠금해제</div>
+        <hr>
+        <p class="text"> fade out 애니메이션</p>
+        <hr>
+        <div class="circle">동그라미</div>
+    </body>
+</html>
