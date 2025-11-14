@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>SESAC SW 아카데미 좌석표</title>
+  <style>
+    /* ===== 전체 레이아웃 ===== */
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f4f6fb;
+      margin: 0;
+      padding: 40px 16px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .container {
+      max-width: 900px;
+      width: 100%;
+      background: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+      padding: 24px 24px 32px;
+    }
+
+    h1 {
+      margin: 0 0 4px;
+      font-size: 1.8rem;
+      text-align: center;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #666;
+      font-size: 0.9rem;
+      margin-bottom: 24px;
+    }
+
+    /* ===== 라디오(주차 선택) 숨기기 ===== */
+    .tab-wrapper input[type="radio"] {
+      display: none;
+    }
+
+    /* ===== 드롭다운 주차 선택 ===== */
+    .week-select {
+      position: relative;
+      max-width: 220px;
+      margin: 0 auto 20px;
+    }
+
+    .week-select summary {
+      list-style: none;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid #cbd5f5;
+      background: #f7f8ff;
+      cursor: pointer;
+      font-size: 0.9rem;
+      color: #374151;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .week-select summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .week-select summary::after {
+      content: "▾";
+      font-size: 0.8rem;
+      color: #6b7280;
+    }
+
+    .week-select[open] summary {
+      border-bottom-left-radius: 0;
+      border-bottom-right-radius: 0;
+      border-color: #94a3ff;
+      background: #eef1ff;
+    }
+
+    .week-options {
+      position: absolute;
+      left: 0;
+      right: 0;
+      background: #ffffff;
+      border: 1px solid #cbd5f5;
+      border-top: none;
+      border-bottom-left-radius: 10px;
+      border-bottom-right-radius: 10px;
+      max-height: 260px;
+      overflow-y: auto;
+      z-index: 10;
+    }
+
+    .week-options label {
+      display: block;
+      padding: 8px 10px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      color: #4b5563;
+    }
+
+    .week-options label:hover {
+      background: #eef2ff;
+    }
+
+    /* ===== 주차별 내용 영역 ===== */
+    .weeks {
+      margin-top: 10px;
+    }
+
+    .week {
+      display: none;
+    }
+
+    #week1:checked ~ .weeks .week1 { display: block; }
+    #week2:checked ~ .weeks .week2 { display: block; }
+    #week3:checked ~ .weeks .week3 { display: block; }
+    #week4:checked ~ .weeks .week4 { display: block; }
+    #week5:checked ~ .weeks .week5 { display: block; }
+    #week6:checked ~ .weeks .week6 { display: block; }
+    #week7:checked ~ .weeks .week7 { display: block; }
+    #week8:checked ~ .weeks .week8 { display: block; }
+    #week9:checked ~ .weeks .week9 { display: block; }
+    #week10:checked ~ .weeks .week10 { display: block; }
+    #week11:checked ~ .weeks .week11 { display: block; }
+    #week12:checked ~ .weeks .week12 { display: block; }
+
+    /* ===== 교실 레이아웃 ===== */
+    .classroom {
+      display: grid;
+      grid-template-columns: 1.3fr 1fr;
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .board {
+      grid-column: 1 / -1;
+      background: #1e293b;
+      color: #e5e7eb;
+      border-radius: 10px;
+      padding: 10px 16px;
+      text-align: center;
+      font-size: 0.9rem;
+      margin-bottom: 8px;
+    }
+
+    .side-title {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #4b5563;
+      margin-bottom: 6px;
+    }
+
+    .zone {
+      background: #f9fafb;
+      border-radius: 12px;
+      padding: 10px;
+      border: 1px solid #e5e7eb;
+    }
+
+    .zone-header {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #6b7280;
+      margin-bottom: 8px;
+    }
+
+    /* 왼쪽: 2x2 그리드 */
+    .seats-4 {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+
+    /* 오른쪽 세로 2칸 (앞) */
+    .seats-vert-2 {
+      display: grid;
+      grid-template-rows: repeat(2, 1fr);
+      gap: 8px;
+    }
+
+    /* 오른쪽 세로 3칸 (뒤) */
+    .seats-vert-3 {
+      display: grid;
+      grid-template-rows: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .seat {
+      background: #ffffff;
+      border-radius: 8px;
+      border: 1px solid #e5e7eb;
+      padding: 8px 4px;
+      text-align: center;
+      font-size: 0.8rem;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      justify-content: center;
+    }
+
+    .seat-label {
+      font-size: 0.7rem;
+      color: #9ca3af;
+    }
+
+    .seat-name {
+      font-weight: 600;
+      color: #374151;
+    }
+
+    @media (max-width: 700px) {
+      .classroom {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>SESAC SW 아카데미 좌석표</h1>
+    <p class="subtitle">3개월 과정 · 13명 · 매주 자리 바꾸기 HTML &amp; CSS 연습</p>
+
+    <div class="tab-wrapper">
+      <!-- 1~12주 라디오 버튼 -->
+      <input type="radio" name="week" id="week1" checked>
+      <input type="radio" name="week" id="week2">
+      <input type="radio" name="week" id="week3">
+      <input type="radio" name="week" id="week4">
+      <input type="radio" name="week" id="week5">
+      <input type="radio" name="week" id="week6">
+      <input type="radio" name="week" id="week7">
+      <input type="radio" name="week" id="week8">
+      <input type="radio" name="week" id="week9">
+      <input type="radio" name="week" id="week10">
+      <input type="radio" name="week" id="week11">
+      <input type="radio" name="week" id="week12">
+
+      <!-- 드롭다운 UI -->
+      <details class="week-select">
+        <summary>주차 선택</summary>
+        <div class="week-options">
+          <label for="week1">1주차</label>
+          <label for="week2">2주차</label>
+          <label for="week3">3주차</label>
+          <label for="week4">4주차</label>
+          <label for="week5">5주차</label>
+          <label for="week6">6주차</label>
+          <label for="week7">7주차</label>
+          <label for="week8">8주차</label>
+          <label for="week9">9주차</label>
+          <label for="week10">10주차</label>
+          <label for="week11">11주차</label>
+          <label for="week12">12주차</label>
+        </div>
+      </details>
+
+      <!-- 주차별 좌석표 -->
+      <div class="weeks">
+
+        <!-- ========== 1주차 ========== -->
+        <div class="week week1">
+          <div class="board">📌 칠판 방향</div>
+          <div class="classroom">
+            <!-- 왼쪽 -->
+            <div>
+              <div class="side-title">왼쪽</div>
+
+              <div class="zone">
+                <div class="zone-header">왼쪽 앞 (4석)</div>
+                <div class="seats-4">
+                  <div class="seat"><div class="seat-label">L-F-1</div><div class="seat-name">학생1</div></div>
+                  <div class="seat"><div class="seat-label">L-F-2</div><div class="seat-name">학생2</div></div>
+                  <div class="seat"><div class="seat-label">L-F-3</div><div class="seat-name">학생3</div></div>
+                  <div class="seat"><div class="seat-label">L-F-4</div><div class="seat-name">학생4</div></div>
+                </div>
+              </div>
+
+              <div class="zone" style="margin-top:10px;">
+                <div class="zone-header">왼쪽 뒤 (4석)</div>
+                <div class="seats-4">
+                  <div class="seat"><div class="seat-label">L-B-1</div><div class="seat-name">학생7</div></div>
+                  <div class="seat"><div class="seat-label">L-B-2</div><div class="seat-name">학생8</div></div>
+                  <div class="seat"><div class="seat-label">L-B-3</div><div class="seat-name">학생9</div></div>
+                  <div class="seat"><div class="seat-label">L-B-4</div><div class="seat-name">학생10</div></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 오른쪽 -->
+            <div>
+              <div class="side-title">오른쪽</div>
+
+              <div class="zone">
+                <div class="zone-header">오른쪽 앞 (2석)</div>
+                <div class="seats-vert-2">
+                  <div class="seat"><div class="seat-label">R-F-1</div><div class="seat-name">학생5</div></div>
+                  <div class="seat"><div class="seat-label">R-F-2</div><div class="seat-name">학생6</div></div>
+                </div>
+              </div>
+
+              <div class="zone" style="margin-top:10px;">
+                <div class="zone-header">오른쪽 뒤 (3석)</div>
+                <div class="seats-vert-3">
+                  <div class="seat"><div class="seat-label">R-B-1</div><div class="seat-name">학생11</div></div>
+                  <div class="seat"><div class="seat-label">R-B-2</div><div class="seat-name">학생12</div></div>
+                  <div class="seat"><div class="seat-label">R-B-3</div><div class="seat-name">학생13</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========== 2주차 ========== -->
+        <div class="week week2">
+          <div class="board">📌 칠판 방향</div>
+          <div class="classroom">
+            <div>
+              <div class="side-title">왼쪽</div>
+
+              <div class="zone">
+                <div class="zone-header">왼쪽 앞 (4석)</div>
+                <div class="seats-4">
+                  <div class="seat"><div class="seat-label">L-F-1</div><div class="seat-name">학생2</div></div>
+                  <div class="seat"><div class="seat-label">L-F-2</div><div class="seat-name">학생3</div></div>
+                  <div class="seat"><div class="seat-label">L-F-3</div><div class="seat-name">학생4</div></div>
+                  <div class="seat"><div class="seat-label">L-F-4</div><div class="seat-name">학생5</div></div>
+                </div>
+              </div>
+
+              <div class="zone" style="margin-top:10px;">
+                <div class="zone-header">왼쪽 뒤 (4석)</div>
+                <div class="seats-4">
+                  <div class="seat"><div class="seat-label">L-B-1</div><div class="seat-name">학생6</div></div>
+                  <div class="seat"><div class="seat-label">L-B-2</div><div class="seat-name">학생7</div></div>
+                  <div class="seat"><div class="seat-label">L-B-3</div><div class="seat-name">학생8</div></div>
+                  <div class="seat"><div class="seat-label">L-B-4</div><div class="seat-name">학생9</div></div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div class="side-title">오른쪽</div>
+
+              <div class="zone">
+                <div class="zone-header">오른쪽 앞 (2석)</div>
+                <div class="seats-vert-2">
+                  <div class="seat"><div class="seat-label">R-F-1</div><div class="seat-name">학생10</div></div>
+                  <div class="seat"><div class="seat-label">R-F-2</div><div class="seat-name">학생11</div></div>
+                </div>
+              </div>
+
+              <div class="zone" style="margin-top:10px;">
+                <div class="zone-header">오른쪽 뒤 (3석)</div>
+                <div class="seats-vert-3">
+                  <div class="seat"><div class="seat-label">R-B-1</div><div class="seat-name">학생12</div></div>
+                  <div class="seat"><div class="seat-label">R-B-2</div><div class="seat-name">학생13</div></div>
+                  <div class="seat"><div class="seat-label">R-B-3</div><div class="seat-name">학생1</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========== 3주차 ========== -->
+        <div class="week week3">
+          <div class="board">📌 칠판 방향</div>
+          <div class="classroom">
+            <div>
+              <div class="side-title">왼쪽</div>
+
+              <div class="zone">
+                <div class="zone-header">왼쪽 앞 (4석)</div>
+                <div class="seats-4">
+                  <div class="seat"><div class="seat-label">L-F-1</div><div class="seat-name">학생3</div></div>
+                  <div class="seat"><div class="seat-label">L-F-2</div><div class="seat-name">학생4</div></div>
+                  <div class="seat"><div class="seat-label">L-F-3</div><div class="seat-name">학생5</div></div>
+                  <div class="seat"><div class="seat-label">L-F-4</div><div class="seat-name">학생6</div></div>
+                </div>
+              </div>
+
+              <div class="zone" style="margin-top:10px;">
+                <div class="zone-header">왼쪽 뒤 (4석)</div>
+                <div class="seats-4">
+                  <div class="seat"><div class="seat-label">L-B-1</div><div class="seat-name">학생7</div></div>
+                  <div class="seat"><div class="seat-label">L-B-2</div><div class="seat-name">학생8</div></div>
+                  <div class="seat"><div class="seat-label">L-B-3</div><div class="seat-name">학생9</div></div>
+                  <div class="seat"><div class="seat-label">L-B-4</div><div class="seat-name">학생10</div></div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div class="side-title">오른쪽</div>
+
+              <div class="zone">
+                <div class="zone-header">오른쪽 앞 (2석)</div>
+                <div class="seats-vert-2">
+                  <div class="seat"><div class="seat-label">R-F-1</div><div class="seat-name">학생11</div></div>
+                  <div class="seat"><div class="seat-label">R-F-2</div><div class="seat-name">학생12</div></div>
+                </div>
+              </div>
+
+              <div class="zone" style="margin-top:10px;">
+                <div class="zone-header">오른쪽 뒤 (3석)</div>
+                <div class="seats-vert-3">
+                  <div class="seat"><div class="seat-label">R-B-1</div><div class="seat-name">학생13</div></div>
+                  <div class="seat"><div class="seat-label">R-B-2</div><div class="seat-name">학생1</div></div>
+                  <div class="seat"><div class="seat-label">R-B-3</div><div class="seat-name">학생2</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========== 4주차 ========== -->
+        <div class="week week4">
+          <div class="board">📌 칠판 방향</div>
+          <div class="classroom">
+            <div>
+              <div class="side-title">왼쪽</div>
+
+              <div class="zone">
+                <div class="zone-header">왼쪽 앞 (4석)</div>
+                <div class="seats-4">
+                  <div class="seat"><div class="seat-label">L-F-1</div><div class="seat-name">학생4</div></div>
+                  <div class="seat"><div class="seat-label">L-F-2</div><div class="seat-name">학생5</div></div>
+                  <div class="seat"><div class="seat-label">L-F-3</div><div class="seat-name">학생6</div></div>
+                  <div class="seat"><div class="seat-label">L-F-4</div><div class="seat-name">학생7</div></div>
+                </div>
+              </div>
+
+              <div class="zone" style="margin-top:10px;">
+                <div class="zone-header">왼쪽 뒤 (4석)</div>
+                <div class="seats-4">
+                  <div class="seat"><div class="seat-label">L-B-1</div><div class="seat-name">학생8</div></div>
+                  <div class="seat"><div class="seat-label">L-B-2</div><div class="seat-name">학생9</div></div>
+                  <div class="seat"><div class="seat-label">L-B-3</div><div class="seat-name">학생10</div></div>
+                  <div class="seat"><div class="seat-label">L-B-4</div><div class="seat-name">학생11</div></div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div class="side-title">오른쪽</div>
+
+              <div class="zone">
+                <div class="zone-header">오른쪽 앞 (2석)</div>
+                <div class="seats-vert-2">
+                  <div class="seat"><div class="seat-label">R-F-1</div><div class="seat-name">학생12</div></div>
+                  <div class="seat"><div class="seat-label">R-F-2</div><div class="seat-name">학생13</div></div>
+                </div>
+              </div>
+
+              <div class="zone" style="margin-top:10px;">
+                <div class="zone-header">오른쪽 뒤 (3석)</div>
+                <div class="seats-vert-3">
+                  <div class="seat"><div class="seat-label">R-B-1</div><div class="seat-name">학생1</div></div>
+                  <div class="seat"><div class="seat-label">R-B-2</div><div class="seat-name">학생2</div></div>
+                  <div class="seat"><div class="seat-label">R-B-3</div><div class="seat-name">학생3</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========== 5주차 ========== -->
+        <div class="week week5">
+          <div class="board">📌 칠판 방향</div>
+          <div class="classroom">
+            <div>
+              <div class="side-title">왼쪽</div>
+
+              <div class="zone">
+                <div class="zone-header">왼쪽 앞 (4석)</div>
+                <div class="seats-4">
+                  <div class="seat"><div class="seat-label">L-F-1</div><div class="seat-name">학생5</div></div>
+                  <div class="seat"><div class="seat-label">L-F-2</div><div class="seat-name">학생6</div></div>
+                  <div class="seat"><div class="seat-label">L-F-3</div><div class="seat-name">학생7</div></div>
+                  <div class="seat"><div class="seat-label">L-F-4</div><div class="seat-name">학생8</div></div>
+                </div>
+              </div>
+
+              <div class="zone" style="margin-top:10px;">
+                <div class="zone-header">왼쪽 뒤 (4석)</div>
+                <div class="seats-4">
+                  <div class="seat"><div class="seat-label">L-B-1</div><div class="seat-name">학생9</div></div>
+                  <div class="seat"><div class="seat-label">L-B-2</div><div class="seat-name">학생10</div></div>
+                  <div class="seat"><div class="seat-label">L-B-3</div><div class="seat-name">학생11</div></div>
+                  <div class="seat"><div class="seat-label">L-B-4</div><div class="seat-name">학생12</div></div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div class="side-title">오른쪽</div>
+
+              <div class="zone">
+                <div class="zone-header">오른쪽 앞 (2석)</div>
+                <div class="seats-vert-2">
+                  <div class="seat"><div class="seat-label">R-F-1</div><div class="seat-name">학생13</div></div>
+                  <div class="seat"><div class="seat-label">R-F-2</div><div class="seat-name">학생1</div></div>
+                </div>
+              </div>
+
+              <div class="zone" style="margin-top:10px;">
+                <div class="zone-header">오른쪽 뒤 (3석)</div>
+                <div class="seats-vert-3">
+                  <div class="seat"><div class="seat-label">R-B-1</div><div class="seat-name">학생2</div></div>
+                  <div class="seat"><div class="seat-label">R-B-2</div><div class="seat-name">학생3</div></div>
+                  <div class="seat"><div class="seat-label">R-B-3</div><div class="seat-name">학생4</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========== 6주차 ========== -->
+        <div class="week week6">
+          <div class="board">📌 칠판 방향</div>
+          <div class="classroom">
+            <div>
+              <div class="side-title">왼쪽</div>
+
+              <div class="zone">
+                <div class="zone-header">왼쪽 앞 (4석)</div>
+                <div class="seats-4">
+                  <div class="seat"><div class="seat-label">L-F-1</div><div class="seat-name">학생6</div></div>
+                  <div class="seat"><div class="seat-label">L-F-2</div><div class="seat-name">학생7</div></div>
+                  <div class="seat"><div class="seat-label">L-F-3</div><div class="seat-name">학생8</div></div>
+                  <div class="seat"><div class="seat-label">L-F-4</div><div class="seat-name">학생9</div></div>
+                </div>
+              </div>
+
+              <div class="zone" style="margin-top:10px;">
+                <div class="zone-header">왼쪽 뒤 (4석)</div>
+                <div class="seats-4">
+                  <div class="seat"><div class="seat-label">L-B-1</div><div class="seat-name">학생10</div></div>
+                  <div class="seat"><div class="seat-label">L-B-2</div><div class="seat-name">학생11</div></div>
+                  <div class="seat"><div class="seat-label">L-B-3</div><div class="seat-name">학생12</div></div>
+                  <div class="seat"><div class="seat-label">L-B-4</div><div class="seat-name">학생13</div></div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div class="side-title">오른쪽</div>
+
+              <div class="zone">
+                <div class="zone-header">오른쪽 앞 (2석)</div>
+                <div class="seats-vert-2">
+                  <div class="seat"><div class="seat-label">R-F-1</div><div class="seat-name">학생1</div></div>
+                  <div class="seat"><div class="seat-label">R-F-2</div><div class="seat-name">학생2</div></div>
+                </div>
+              </div>
+
+              <div class="zone" style="margin-top:10px;">
+                <div class="zone-header">오른쪽 뒤 (3석)</div>
+                <div class="seats-vert-3">
+                  <div class="seat"><div class="seat-label">R-B-1</div><div class="seat-name">학생3</div></div>
+                  <div class="seat"><div class="seat-label">R-B-2</div><div class="seat-name">학생4</div></div>
+                  <div class="seat"><div class="seat-label">R-B-3</div><div class="seat-name">학생5</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========== 7주차 ========== -->
+        <div class="week week7">
+          <div class="board">📌 칠판 방향</div>
+          <div class="classroom">
+            <div>
+              <div class="side-title">왼쪽</div>
+
+              <div class="zone">
+                <div class="zone-header">왼쪽 앞 (4석)</div>
+                <div class="seats-4">
+                  <div class="seat"><div class="seat-label">L-F-1</div><div class="seat-name">학생7</div></div>
+                  <div class="seat"><div class="seat-label">L-F-2</div><div class="seat-name">학생8</div></div>
+                  <div class="seat"><div class="seat-label">L-F-3</div><div class="seat-name">학생9</div></div>
+                  <div class="seat"><div class="seat-label">L-F-4</div><div class="seat-name">학생10</div></div>
+                </div>
+              </div>
+
+              <div class="zone" style="margin-top:10px;">
+                <div class="zone-header">왼쪽 뒤 (4석)</div>
+                <div class="seats-4">
+                  <div class="seat"><div class="seat-label">L-B-1</div><div class="seat-name">학생11</div></div>
+                  <div class="seat"><div class="seat-label">L-B-2</div><div class="seat-name">학생12</div></div>
+                  <div class="seat"><div class="seat-label">L-B-3</div><div class="seat-name">학생13</div></div>
+                  <div class="seat"><div class="seat-label">L-B-4</div><div class="seat-name">학생1</div></div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div class="side-title">오른쪽</div>
+
+              <div class="zone">
+                <div class="zone-header">오른쪽 앞 (2석)</div>
+                <div class="seats-vert-2">
+                  <div class="seat"><div class="seat-label">R-F-1</div><div class="seat-name">학생2</div></div>
+                  <div class="seat"><div class="seat-label">R-F-2</div><div class="seat-name">학생3</div></div>
+                </div>
+              </div>
+
+              <div class="zone" style="margin-top:10px;">
+                <div class="zone-header">오른쪽 뒤 (3석)</div>
+                <div class="seats-vert-3">
+                  <div class="seat"><div class="seat-label">R-B-1</div><div class="seat-name">학생4</div></div>
+                  <div class="seat"><div class="seat-label">R-B-2</div><div class="seat-name">학생5</div></div>
+                  <div class="seat"><div class="seat-label">R-B-3</div><div class="seat-name">학생6</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========== 8주차 ========== -->
+        <div class="week week8">
+          <div class="board">📌 칠판 방향</div>
+          <div class="classroom">
+            <div>
+              <div class="side-title">왼쪽</div>
+
+              <div class="zone">
+                <div class="zone-header">왼쪽 앞 (4석)</div>
+                <div class="seats-4">
+                  <div class="seat"><div class="seat-label">L-F-1</div><div class="seat-name">학생8</div></div>
+                  <div class="seat"><div class="seat-label">L-F-2</div><div class="seat-name">학생9</div></div>
+                  <div class="seat"><div class="seat-label">L-F-3</div><div class="seat-name">학생10</div></div>
+                  <div class="seat"><div class="seat-label">L-F-4</div><div class="seat-name">학생11</div></div>
+                </div>
+              </div>
+
+              <div class="zone" style="margin-top:10px;">
+                <div class="zone-header">왼쪽 뒤 (4석)</div>
+                <div class="seats-4">
+                  <div class="seat"><div class="seat-label">L-B-1</div><div class="seat-name">학생12</div></div>
+                  <div class="seat"><div class="seat-label">L-B-2</div><div class="seat-name">학생13</div></div>
+                  <div class="seat"><div class="seat-label">L-B-3</div><div class="seat-name">학생1</div></div>
+                  <div class="seat"><div class="seat-label">L-B-4</div><div class="seat-name">학생2</div></div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div class="side-title">오른쪽</div>
+
+              <div class="zone">
+                <div class="zone-header">오른쪽 앞 (2석)</div>
+                <div class="seats-vert-2">
+                  <div class="seat"><div class="seat-label">R-F-1</div><div class="seat-name">학생3</div></div>
+                  <div class="seat"><div class="seat-label">R-F-2</div><div class="seat-name">학생4</div></div>
+                </div>
+              </div>
+
+              <div class="zone" style="margin-top:10px;">
+                <div class="zone-header">오른쪽 뒤 (3석)</div>
+                <div class="seats-vert-3">
+                  <div class="seat"><div class="seat-label">R-B-1</div><div class="seat-name">학생5</div></div>
+                  <div class="seat"><div class="seat-label">R-B-2</div><div class="seat-name">학생6</div></div>
+                  <div class="seat"><div class="seat-label">R-B-3</div><div class="seat-name">학생7</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========== 9주차 ========== -->
+        <div class="week week9">
+          <div class="board">📌 칠판 방향</div>
+          <div class="classroom">
+            <div>
+              <div class="side-title">왼쪽</div>
+
+              <div class="zone">
+                <div class="zone-header">왼쪽 앞 (4석)</div>
+                <div class="seats-4">
+                  <div class="seat"><div class="seat-label">L-F-1</div><div class="seat-name">학생9</div></div>
+                  <div class="seat"><div class="seat-label">L-F-2</div><div class="seat-name">학생10</div></div>
+                  <div class="seat"><div class="seat-label">L-F-3</div><div class="seat-name">학생11</div></div>
+                  <div class="seat"><div class="seat-label">L-F-4</div><div class="seat-name">학생12</div></div>
+                </div>
+              </div>
+
+              <div class="zone" style="margin-top:10px;">
+                <div class="zone-header">왼쪽 뒤 (4석)</div>
+                <div class="seats-4">
+                  <div class="seat"><div class="seat-label">L-B-1</div><div class="seat-name">학생13</div></div>
+                  <div class="seat"><div class="seat-label">L-B-2</div><div class="seat-name">학생1</div></div>
+                  <div class="seat"><div class="seat-label">L-B-3</div><div class="seat-name">학생2</div></div>
+                  <div class="seat"><div class="seat-label">L-B-4</div><div class="seat-name">학생3</div></div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div class="side-title">오른쪽</div>
+
+              <div class="zone">
+                <div class="zone-header">오른쪽 앞 (2석)</div>
+                <div class="seats-vert-2">
+                  <div class="seat"><div class="seat-label">R-F-1</div><div class="seat-name">학생4</div></div>
+                  <div class="seat"><div class="seat-label">R-F-2</div><div class="seat-name">학생5</div></div>
+                </div>
+              </div>
+
+              <div class="zone" style="margin-top:10px;">
+                <div class="zone-header">오른쪽 뒤 (3석)</div>
+                <div class="seats-vert-3">
+                  <div class="seat"><div class="seat-label">R-B-1</div><div class="seat-name">학생6</div></div>
+                  <div class="seat"><div class="seat-label">R-B-2</div><div class="seat-name">학생7</div></div>
+                  <div class="seat"><div class="seat-label">R-B-3</div><div class="seat-name">학생8</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========== 10주차 ========== -->
+        <div class="week week10">
+          <div class="board">📌 칠판 방향</div>
+          <div class="classroom">
+            <div>
+              <div class="side-title">왼쪽</div>
+
+              <div class="zone">
+                <div class="zone-header">왼쪽 앞 (4석)</div>
+                <div class="seats-4">
+                  <div class="seat"><div class="seat-label">L-F-1</div><div class="seat-name">학생10</div></div>
+                  <div class="seat"><div class="seat-label">L-F-2</div><div class="seat-name">학생11</div></div>
+                  <div class="seat"><div class="seat-label">L-F-3</div><div class="seat-name">학생12</div></div>
+                  <div class="seat"><div class="seat-label">L-F-4</div><div class="seat-name">학생13</div></div>
+                </div>
+              </div>
+
+              <div class="zone" style="margin-top:10px;">
+                <div class="zone-header">왼쪽 뒤 (4석)</div>
+                <div class="seats-4">
+                  <div class="seat"><div class="seat-label">L-B-1</div><div class="seat-name">학생1</div></div>
+                  <div class="seat"><div class="seat-label">L-B-2</div><div class="seat-name">학생2</div></div>
+                  <div class="seat"><div class="seat-label">L-B-3</div><div class="seat-name">학생3</div></div>
+                  <div class="seat"><div class="seat-label">L-B-4</div><div class="seat-name">학생4</div></div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div class="side-title">오른쪽</div>
+
+              <div class="zone">
+                <div class="zone-header">오른쪽 앞 (2석)</div>
+                <div class="seats-vert-2">
+                  <div class="seat"><div class="seat-label">R-F-1</div><div class="seat-name">학생5</div></div>
+                  <div class="seat"><div class="seat-label">R-F-2</div><div class="seat-name">학생6</div></div>
+                </div>
+              </div>
+
+              <div class="zone" style="margin-top:10px;">
+                <div class="zone-header">오른쪽 뒤 (3석)</div>
+                <div class="seats-vert-3">
+                  <div class="seat"><div class="seat-label">R-B-1</div><div class="seat-name">학생7</div></div>
+                  <div class="seat"><div class="seat-label">R-B-2</div><div class="seat-name">학생8</div></div>
+                  <div class="seat"><div class="seat-label">R-B-3</div><div class="seat-name">학생9</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========== 11주차 ========== -->
+        <div class="week week11">
+          <div class="board">📌 칠판 방향</div>
+          <div class="classroom">
+            <div>
+              <div class="side-title">왼쪽</div>
+
+              <div class="zone">
+                <div class="zone-header">왼쪽 앞 (4석)</div>
+                <div class="seats-4">
+                  <div class="seat"><div class="seat-label">L-F-1</div><div class="seat-name">학생11</div></div>
+                  <div class="seat"><div class="seat-label">L-F-2</div><div class="seat-name">학생12</div></div>
+                  <div class="seat"><div class="seat-label">L-F-3</div><div class="seat-name">학생13</div></div>
+                  <div class="seat"><div class="seat-label">L-F-4</div><div class="seat-name">학생1</div></div>
+                </div>
+              </div>
+
+              <div class="zone" style="margin-top:10px;">
+                <div class="zone-header">왼쪽 뒤 (4석)</div>
+                <div class="seats-4">
+                  <div class="seat"><div class="seat-label">L-B-1</div><div class="seat-name">학생2</div></div>
+                  <div class="seat"><div class="seat-label">L-B-2</div><div class="seat-name">학생3</div></div>
+                  <div class="seat"><div class="seat-label">L-B-3</div><div class="seat-name">학생4</div></div>
+                  <div class="seat"><div class="seat-label">L-B-4</div><div class="seat-name">학생5</div></div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div class="side-title">오른쪽</div>
+
+              <div class="zone">
+                <div class="zone-header">오른쪽 앞 (2석)</div>
+                <div class="seats-vert-2">
+                  <div class="seat"><div class="seat-label">R-F-1</div><div class="seat-name">학생6</div></div>
+                  <div class="seat"><div class="seat-label">R-F-2</div><div class="seat-name">학생7</div></div>
+                </div>
+              </div>
+
+              <div class="zone" style="margin-top:10px;">
+                <div class="zone-header">오른쪽 뒤 (3석)</div>
+                <div class="seats-vert-3">
+                  <div class="seat"><div class="seat-label">R-B-1</div><div class="seat-name">학생8</div></div>
+                  <div class="seat"><div class="seat-label">R-B-2</div><div class="seat-name">학생9</div></div>
+                  <div class="seat"><div class="seat-label">R-B-3</div><div class="seat-name">학생10</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========== 12주차 ========== -->
+        <div class="week week12">
+          <div class="board">📌 칠판 방향</div>
+          <div class="classroom">
+            <div>
+              <div class="side-title">왼쪽</div>
+
+              <div class="zone">
+                <div class="zone-header">왼쪽 앞 (4석)</div>
+                <div class="seats-4">
+                  <div class="seat"><div class="seat-label">L-F-1</div><div class="seat-name">학생12</div></div>
+                  <div class="seat"><div class="seat-label">L-F-2</div><div class="seat-name">학생13</div></div>
+                  <div class="seat"><div class="seat-label">L-F-3</div><div class="seat-name">학생1</div></div>
+                  <div class="seat"><div class="seat-label">L-F-4</div><div class="seat-name">학생2</div></div>
+                </div>
+              </div>
+
+              <div class="zone" style="margin-top:10px;">
+                <div class="zone-header">왼쪽 뒤 (4석)</div>
+                <div class="seats-4">
+                  <div class="seat"><div class="seat-label">L-B-1</div><div class="seat-name">학생3</div></div>
+                  <div class="seat"><div class="seat-label">L-B-2</div><div class="seat-name">학생4</div></div>
+                  <div class="seat"><div class="seat-label">L-B-3</div><div class="seat-name">학생5</div></div>
+                  <div class="seat"><div class="seat-label">L-B-4</div><div class="seat-name">학생6</div></div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div class="side-title">오른쪽</div>
+
+              <div class="zone">
+                <div class="zone-header">오른쪽 앞 (2석)</div>
+                <div class="seats-vert-2">
+                  <div class="seat"><div class="seat-label">R-F-1</div><div class="seat-name">학생7</div></div>
+                  <div class="seat"><div class="seat-label">R-F-2</div><div class="seat-name">학생8</div></div>
+                </div>
+              </div>
+
+              <div class="zone" style="margin-top:10px;">
+                <div class="zone-header">오른쪽 뒤 (3석)</div>
+                <div class="seats-vert-3">
+                  <div class="seat"><div class="seat-label">R-B-1</div><div class="seat-name">학생9</div></div>
+                  <div class="seat"><div class="seat-label">R-B-2</div><div class="seat-name">학생10</div></div>
+                  <div class="seat"><div class="seat-label">R-B-3</div><div class="seat-name">학생11</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /.weeks -->
+    </div><!-- /.tab-wrapper -->
+  </div>
+</body>
+</html>
