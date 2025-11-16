@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>길건너 친구들 - 내 버전</title>
+  <style>
+    body {
+      margin: 0;
+      background: #222;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    canvas {
+      background: #333;
+      border: 2px solid #fff;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="game" width="480" height="640"></canvas>
+
+  <script>
+    // ===== 기본 설정 =====
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+
+    const TILE = 40;                      // 한 칸 크기 (40px)
+    const COLS = canvas.width / TILE;     // 480 / 40 = 12칸
+    const ROWS = canvas.height / TILE;    // 640 / 40 = 16칸
+
+    // 플레이어 (그리드 기준 위치)
+    let player = {
+      col: Math.floor(COLS / 2),
+      row: ROWS - 1,
+      alive: true,
+      score: 0,
+    };
+
+    // 자동차들
+    let cars = [
+      { row: 10, x: 0, speed: 2,  width: TILE * 1.2 },
+      { row: 8,  x: 300, speed: -3, width: TILE * 1.5 },
+      { row: 6,  x: 100, speed: 2.5, width: TILE * 1.3 },
+    ];
+
+    // 입력 처리
+    window.addEventListener('keydown', (e) => {
+      if (!player.alive) return;
+
+      let moved = false;
+      if (e.key === 'ArrowUp') {
+        if (player.row > 0) {
+          player.row--;
+          moved = true;
+          player.score++;
+        }
+      } else if (e.key === 'ArrowDown') {
+        if (player.row < ROWS - 1) {
+          player.row++;
+          moved = true;
+          if (player.score > 0) player.score--;
+        }
+      } else if (e.key === 'ArrowLeft') {
+        if (player.col > 0) {
+          player.col--;
+          moved = true;
+        }
+      } else if (e.key === 'ArrowRight') {
+        if (player.col < COLS - 1) {
+          player.col++;
+          moved = true;
+        }
+      }
+    });
+
+    // ===== 게임 루프 =====
+    let lastTime = 0;
+    function gameLoop(timestamp) {
+      const dt = (timestamp - lastTime) / 16.67; // 60fps 기준
+      lastTime = timestamp;
+
+      update(dt);
+      draw();
+
+      requestAnimationFrame(gameLoop);
+    }
+
+    function update(dt) {
+      // 자동차 이동
+      cars.forEach((car) => {
+        car.x += car.speed * dt;
+
+        if (car.speed > 0 && car.x > canvas.width + TILE) {
+          car.x = -car.width;
+        } else if (car.speed < 0 && car.x < -car.width) {
+          car.x = canvas.width + TILE;
+        }
+      });
+
+      // 충돌 체크
+      checkCollision();
+    }
+
+    function checkCollision() {
+      if (!player.alive) return;
+
+      const playerX = player.col * TILE;
+      const playerY = player.row * TILE;
+      const pW = TILE * 0.8;
+      const pH = TILE * 0.8;
+
+      cars.forEach((car) => {
+        if (player.row === car.row) {
+          const carX = car.x;
+          const carY = car.row * TILE;
+          const cW = car.width;
+          const cH = TILE * 0.8;
+
+          const overlapX =
+            playerX < carX + cW &&
+            playerX + pW > carX;
+          const overlapY =
+            playerY < carY + cH &&
+            playerY + pH > carY;
+
+          if (overlapX && overlapY) {
+            player.alive = false;
+            console.log('Game Over!');
+          }
+        }
+      });
+    }
+
+    function drawGrid() {
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          if (r >= 6 && r <= 10) {
+            ctx.fillStyle = '#444'; // 도로
+          } else {
+            ctx.fillStyle = '#1b5e20'; // 풀
+          }
+          ctx.fillRect(c * TILE, r * TILE, TILE, TILE);
+
+          ctx.strokeStyle = '#222';
+          ctx.strokeRect(c * TILE, r * TILE, TILE, TILE);
+        }
+      }
+    }
+
+    function drawPlayer() {
+      const x = player.col * TILE + TILE * 0.1;
+      const y = player.row * TILE + TILE * 0.1;
+      const size = TILE * 0.8;
+
+      ctx.fillStyle = player.alive ? '#ffeb3b' : '#9e9e9e';
+      ctx.fillRect(x, y, size, size);
+    }
+
+    function drawCars() {
+      ctx.fillStyle = '#e53935';
+      cars.forEach((car) => {
+        const y = car.row * TILE + TILE * 0.1;
+        const h = TILE * 0.8;
+        ctx.fillRect(car.x, y, car.width, h);
+      });
+    }
+
+    function drawUI() {
+      ctx.fillStyle = 'white';
+      ctx.font = '20px sans-serif';
+      ctx.fillText(`Score: ${player.score}`, 10, 30);
+
+      if (!player.alive) {
+        ctx.fillStyle = 'rgba(0,0,0,0.5)';
+        ctx.fillRect(0, canvas.height / 2 - 40, canvas.width, 80);
+        ctx.fillStyle = 'white';
+        ctx.font = '28px sans-serif';
+        ctx.fillText('Game Over', canvas.width / 2 - 70, canvas.height / 2);
+        ctx.font = '16px sans-serif';
+        ctx.fillText('새로고침(F5)으로 다시 시작', canvas.width / 2 - 105, canvas.height / 2 + 24);
+      }
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawGrid();
+      drawCars();
+      drawPlayer();
+      drawUI();
+    }
+
+    requestAnimationFrame(gameLoop);
+  </script>
+</body>
+</html>
