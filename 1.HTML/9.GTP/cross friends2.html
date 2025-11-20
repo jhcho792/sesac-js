@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>길건너 고양이</title>
+  <style>
+    body {
+      margin: 0;
+      background: #222;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    canvas {
+      background: #000;
+      border: 2px solid #fff;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="game" width="480" height="640"></canvas>
+
+  <script>
+    // ===== 기본 설정 =====
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+
+    const TILE = 40;                      // 한 칸 크기
+    const COLS = canvas.width / TILE;     // 480 / 40 = 12칸
+    const ROWS = canvas.height / TILE;    // 640 / 40 = 16칸
+
+    // ===== 이미지 로드 =====
+    const imgGrass  = new Image(); imgGrass.src  = 'grass.png';
+    const imgRoad   = new Image(); imgRoad.src   = 'road.png';
+    const imgRiver  = new Image(); imgRiver.src  = 'river.png';
+    const imgPlayer = new Image(); imgPlayer.src = 'red cat.png';
+    const imgTruck  = new Image(); imgTruck.src  = '트럭.png';
+    const imgPolice = new Image(); imgPolice.src = 'police.png';
+    const imgCoin   = new Image(); imgCoin.src   = 'coin.png';
+
+    // ===== 행별 타일 타입 =====
+    // 0(위) ~ 15(아래)
+    const rowTypes = new Array(ROWS).fill('grass');
+    for (let r = 3; r <= 5; r++) rowTypes[r] = 'river'; // 강 구간
+    for (let r = 6; r <= 10; r++) rowTypes[r] = 'road'; // 도로 구간
+    // 나머지는 grass 그대로
+
+    // ===== 플레이어 =====
+    let player = {
+      col: Math.floor(COLS / 2),
+      row: ROWS - 1,
+      alive: true,
+      score: 0,
+    };
+
+    // ===== 레벨 =====
+    let level = 1;
+
+    // ===== 자동차들 (트럭/경찰차) =====
+    let cars = [
+      { type: 'truck',  row: 10, x: 0,   speed: 2,   width: TILE * 2.0 },
+      { type: 'police', row: 8,  x: 320, speed: -3,  width: TILE * 2.2 },
+      { type: 'truck',  row: 6,  x: 120, speed: 2.5, width: TILE * 2.0 },
+    ];
+
+    // ===== 코인 =====
+    let coins = [
+      { col: 2, row: 12, collected: false },
+      { col: 9, row: 12, collected: false },
+      { col: 4, row: 4,  collected: false },
+    ];
+
+    // ===== 입력 처리 =====
+    window.addEventListener('keydown', (e) => {
+      if (!player.alive) return;
+
+      if (e.key === 'ArrowUp') {
+        if (player.row > 0) {
+          player.row--;
+          player.score++;
+        }
+      } else if (e.key === 'ArrowDown') {
+        if (player.row < ROWS - 1) {
+          player.row++;
+          if (player.score > 0) player.score--;
+        }
+      } else if (e.key === 'ArrowLeft') {
+        if (player.col > 0) {
+          player.col--;
+        }
+      } else if (e.key === 'ArrowRight') {
+        if (player.col < COLS - 1) {
+          player.col++;
+        }
+      }
+    });
+
+    // ===== 게임 루프 =====
+    let lastTime = 0;
+    function gameLoop(timestamp) {
+      const dt = Math.min((timestamp - lastTime) / 16.67, 2); // 갑자기 튀는 것 방지
+      lastTime = timestamp;
+
+      update(dt);
+      draw();
+
+      requestAnimationFrame(gameLoop);
+    }
+
+    function update(dt) {
+      // 자동차 이동
+      cars.forEach((car) => {
+        car.x += car.speed * dt;
+
+        // 화면 밖으로 나가면 반대편에서 다시 등장
+        if (car.speed > 0 && car.x > canvas.width + TILE) {
+          car.x = -car.width;
+        } else if (car.speed < 0 && car.x < -car.width) {
+          car.x = canvas.width + TILE;
+        }
+      });
+
+      // 충돌 / 코인 / 레벨업
+      checkCollisionWithCars();
+      checkCoinCollect();
+      checkStageClear();
+    }
+
+    // ===== 자동차 충돌 체크 =====
+    function checkCollisionWithCars() {
+      if (!player.alive) return;
+
+      const playerX = player.col * TILE + TILE * 0.1;
+      const playerY = player.row * TILE + TILE * 0.1;
+      const pW = TILE * 0.8;
+      const pH = TILE * 0.8;
+
+      cars.forEach((car) => {
+        if (player.row === car.row) {
+          const carX = car.x;
+          const carY = car.row * TILE + TILE * 0.1;
+          const cW = car.width;
+          const cH = TILE * 0.8;
+
+          const overlapX =
+            playerX < carX + cW &&
+            playerX + pW > carX;
+          const overlapY =
+            playerY < carY + cH &&
+            playerY + pH > carY;
+
+          if (overlapX && overlapY) {
+            player.alive = false;
+            console.log('Game Over!');
+          }
+        }
+      });
+    }
+
+    // ===== 코인 획득 체크 =====
+    function checkCoinCollect() {
+      coins.forEach((coin) => {
+        if (
+          !coin.collected &&
+          coin.col === player.col &&
+          coin.row === player.row
+        ) {
+          coin.collected = true;
+          player.score += 10; // 코인 점수
+        }
+      });
+    }
+
+    // ===== 스테이지 클리어 & 레벨 업 =====
+    function checkStageClear() {
+      if (!player.alive) return;
+
+      if (player.row === 0) {
+        level++;
+
+        // 플레이어를 다시 맨 아래 중앙으로
+        player.row = ROWS - 1;
+        player.col = Math.floor(COLS / 2);
+
+        // 보너스 점수
+        player.score += 5;
+
+        // 자동차 속도 업
+        cars.forEach((car) => {
+          car.speed *= 1.15;
+        });
+
+        // 코인 리셋
+        coins.forEach((coin) => {
+          coin.collected = false;
+        });
+
+        console.log('Level Up! 현재 레벨:', level);
+      }
+    }
+
+    // ===== 타일 그리기 =====
+    function drawGrid() {
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          const x = c * TILE;
+          const y = r * TILE;
+
+          let img = imgGrass;
+          if (rowTypes[r] === 'road')  img = imgRoad;
+          if (rowTypes[r] === 'river') img = imgRiver;
+
+          if (img.complete) {
+            ctx.drawImage(img, x, y, TILE, TILE);
+          } else {
+            // 이미지 로딩 전 임시 색
+            if (rowTypes[r] === 'road') {
+              ctx.fillStyle = '#3a3a3a';
+            } else if (rowTypes[r] === 'river') {
+              ctx.fillStyle = '#00bcd4';
+            } else {
+              ctx.fillStyle = '#8bc34a';
+            }
+            ctx.fillRect(x, y, TILE, TILE);
+          }
+        }
+      }
+    }
+
+    // ===== 플레이어 그리기 =====
+    function drawPlayer() {
+      const size = TILE * 0.9;
+      const x = player.col * TILE + (TILE - size) / 2;
+      const y = player.row * TILE + (TILE - size) / 2;
+
+      if (imgPlayer.complete) {
+        ctx.drawImage(imgPlayer, x, y, size, size);
+      } else {
+        ctx.fillStyle = player.alive ? '#ffeb3b' : '#9e9e9e';
+        ctx.fillRect(x, y, size, size);
+      }
+    }
+
+    // ===== 자동차 그리기 =====
+    function drawCars() {
+      cars.forEach((car) => {
+        const h = TILE * 0.9;
+        const y = car.row * TILE + (TILE - h) / 2;
+        let img = null;
+
+        if (car.type === 'truck')  img = imgTruck;
+        if (car.type === 'police') img = imgPolice;
+
+        if (img && img.complete) {
+          ctx.drawImage(img, car.x, y, car.width, h);
+        } else {
+          ctx.fillStyle = car.type === 'truck' ? '#ff7043' : '#42a5f5';
+          ctx.fillRect(car.x, y, car.width, h);
+        }
+      });
+    }
+
+    // ===== 코인 그리기 =====
+    function drawCoins() {
+      coins.forEach((coin) => {
+        if (coin.collected) return;
+
+        const size = TILE * 0.7;
+        const x = coin.col * TILE + (TILE - size) / 2;
+        const y = coin.row * TILE + (TILE - size) / 2;
+
+        if (imgCoin.complete) {
+          ctx.drawImage(imgCoin, x, y, size, size);
+        } else {
+          ctx.fillStyle = '#ffd600';
+          ctx.beginPath();
+          ctx.arc(x + size / 2, y + size / 2, size / 2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      });
+    }
+
+    // ===== UI 그리기 =====
+    function drawUI() {
+      ctx.fillStyle = 'white';
+      ctx.font = '20px sans-serif';
+      ctx.fillText(`Score: ${player.score}`, 10, 28);
+      ctx.fillText(`Level: ${level}`, 10, 52);
+
+      if (!player.alive) {
+        ctx.fillStyle = 'rgba(0,0,0,0.6)';
+        ctx.fillRect(0, canvas.height / 2 - 50, canvas.width, 100);
+
+        ctx.fillStyle = 'white';
+        ctx.font = '28px sans-serif';
+        ctx.fillText('Game Over', canvas.width / 2 - 80, canvas.height / 2 - 5);
+
+        ctx.font = '16px sans-serif';
+        ctx.fillText('F5를 눌러 다시 시작하세요', canvas.width / 2 - 120, canvas.height / 2 + 24);
+      }
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawGrid();
+      drawCars();
+      drawCoins();
+      drawPlayer();
+      drawUI();
+    }
+
+    // ===== 게임 시작 =====
+    requestAnimationFrame(gameLoop);
+  </script>
+</body>
+</html>
